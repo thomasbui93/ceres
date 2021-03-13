@@ -1,14 +1,15 @@
 package ceres.crawler;
 
 import java.io.IOException;
+import java.util.concurrent.CompletableFuture;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 
 public class BaseCrawler {
   private final String baseUrl;
-  private Document page;
+  private CompletableFuture<Document> page;
 
-  public static Document fetchPage(String baseUrl) throws IOException {
+  public static CompletableFuture<Document> fetchPage(String baseUrl) throws IOException {
     var crawler = new BaseCrawler(baseUrl);
     return crawler.getPage();
   }
@@ -17,8 +18,16 @@ public class BaseCrawler {
     this.baseUrl = baseUrl;
   }
 
-  public Document getPage() throws IOException {
-    this.page = this.page == null ? Jsoup.connect(this.baseUrl).get() : this.page;
+  public CompletableFuture<Document> getPage() {
+    if (this.page == null) {
+      this.page = CompletableFuture.supplyAsync(() -> {
+        try {
+          return Jsoup.connect(this.baseUrl).get();
+        } catch (IOException ex) {
+          return null;
+        }
+      });
+    }
     return this.page;
   }
 }

@@ -4,9 +4,11 @@
 package ceres;
 
 import ceres.crawler.PoemFetcher;
+import com.ea.async.Async;
 
 public class App  {
     public static void main(String[] args) {
-        var poemFetcher = new PoemFetcher("Lý Bạch");
+        Async.init();
+        var poemFetcher = new PoemFetcher("https://www.thivien.net","Lý Bạch");
     }
 }

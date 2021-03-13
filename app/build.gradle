@@ -16,6 +16,10 @@ repositories {
     jcenter()
 }
 
+def jsonYamlVersion = "2.11.1"
+def lombokVersion = "1.18.16"
+def slf4jVersion = "1.6.1"
+
 dependencies {
     // Use JUnit Jupiter API for testing.
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
@@ -24,12 +28,15 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
     // This dependency is used by the application.
-    implementation 'com.google.guava:guava:29.0-jre'
-    implementation 'org.jsoup:jsoup:1.13.1'
-    implementation 'com.ea.async:ea-async:1.2.3'
+    implementation "com.google.guava:guava:29.0-jre"
+    implementation "org.jsoup:jsoup:1.13.1"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jsonYamlVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jsonYamlVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "org.slf4j:slf4j-simple:$slf4jVersion"
 
-    compileOnly 'org.projectlombok:lombok:1.18.16'
-    annotationProcessor 'org.projectlombok:lombok:1.18.16'
+    compileOnly "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 }
 
 application {

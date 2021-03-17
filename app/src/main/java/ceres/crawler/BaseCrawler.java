@@ -1,5 +1,6 @@
 package ceres.crawler;
 
+import io.vertx.core.Future;
 import java.io.IOException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -8,7 +9,7 @@ public class BaseCrawler {
   private final String baseUrl;
   private Document page;
 
-  public static Document fetchPage(String baseUrl) throws IOException {
+  public static Future<Document> fetchPage(String baseUrl) {
     var crawler = new BaseCrawler(baseUrl);
     return crawler.getPage();
   }
@@ -17,10 +18,17 @@ public class BaseCrawler {
     this.baseUrl = baseUrl;
   }
 
-  public Document getPage() throws IOException {
-    if (this.page == null) {
-      this.page = Jsoup.connect(this.baseUrl).get();
-    }
-    return this.page;
+  public Future<Document> getPage() {
+    return Future.future(r -> {
+      if (this.page == null) {
+        try {
+          this.page = Jsoup.connect(this.baseUrl).get();
+          r.complete(this.page);
+        } catch (IOException e) {
+          this.page = null;
+          r.fail(e);
+        }
+      }
+    });
   }
 }

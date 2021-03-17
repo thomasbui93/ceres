@@ -1,14 +1,17 @@
 package ceres.crawler;
 
 import ceres.configuration.PoemConfiguration;
-import ceres.exception.crawler.AuthorPageNotFoundException;
-import ceres.exception.crawler.PoemLinksFetchingException;
-import java.io.IOException;
+import ceres.repository.PoemRepository;
+import ceres.repository.PoetRepository;
+import ceres.repository.models.Poet;
+import io.vertx.core.CompositeFuture;
+import io.vertx.core.Future;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -18,79 +21,103 @@ import org.jsoup.select.Elements;
 public class PoemFetcher {
   private final String poetName;
   private final String baseUrl;
+  private Poet poet;
 
-  public PoemFetcher(PoemConfiguration poemConfiguration) {
+  @Inject
+  private final PoetRepository poetRepository;
+  @Inject
+  private final PoemRepository poemRepository;
+
+  public PoemFetcher(PoemConfiguration poemConfiguration,
+      PoetRepository poetRepository, PoemRepository poemRepository) {
     this.poetName = poemConfiguration.getAuthors().get(0);
     this.baseUrl = poemConfiguration.getBaseUrl();
+    this.poetRepository = poetRepository;
+    this.poemRepository = poemRepository;
   }
 
-  private CompletableFuture<String> getPoetPage() {
-    try {
-      String url = String.format("%s/qsearch.xml.php"
-          + "?Core=author&Field=Name&Value=%s&Page=0", baseUrl, URLEncoder.encode(poetName));
-      Document page = BaseCrawler.fetchPage(url);
-      Elements links = page.select("a");
-      var poetUrl = String.format("%s/%s", baseUrl, links.get(0).attr("href"));
-      return CompletableFuture.completedFuture(poetUrl);
-    } catch (IOException ex) {
-      log.error(String.format("Failed to search for author: %s", poetName), ex.fillInStackTrace());
-      return CompletableFuture.failedFuture(new AuthorPageNotFoundException());
-    }
+  private Future<String> getPoetPage() {
+    return this.poetRepository.get(poetName)
+        .flatMap(poet -> {
+          this.poet = poet;
+          if (poet == null) {
+            return fetchPoetPage()
+                .flatMap(poetPage -> this.poetRepository.save(Poet
+                    .builder()
+                    .poetUrl(poetPage)
+                    .poetName(poetName)
+                    .build()
+                ))
+                .map(Poet::getPoetUrl);
+          }
+          return Future.succeededFuture(poet.getPoetUrl());
+        });
   }
 
-  private CompletableFuture<List<String>> getPoemLinks(String poetUrl) {
-    try {
-      Document page = BaseCrawler.fetchPage(poetUrl);
-      Elements elements = page.select(".poem-group-list li a");
-      var links = elements.stream()
-          .map(el -> String.format("%s/%s", this.baseUrl, el.attr("href")))
-          .collect(Collectors.toList());
-      return CompletableFuture.completedFuture(links);
-    } catch (IOException ex) {
-      log.error(String.format("Failed to get links for author poems: %s.", poetName), ex.fillInStackTrace());
-      return CompletableFuture.failedFuture(new PoemLinksFetchingException());
-    }
+  private Future<String> fetchPoetPage() {
+    String url =
+        String.format(
+            "%s/qsearch.xml.php" + "?Core=author&Field=Name&Value=%s&Page=0",
+            baseUrl, URLEncoder.encode(poetName));
+    return BaseCrawler.fetchPage(url)
+        .map(page -> page.select("a"))
+        .map(links -> String.format("%s/%s", baseUrl, links.get(0).attr("href")));
   }
 
-  public CompletableFuture<Object> fetchPoems() {
-    return getPoetPage().thenApply(poetUrl -> getPoemLinks(poetUrl)
-        .thenApply(links -> CompletableFuture.allOf(links
-            .stream()
-            .map(this::getPoem)
-            .toArray(CompletableFuture[]::new)
-        ))
+  private Future<List<String>> getPoemLinks(String poetUrl) {
+    return BaseCrawler.fetchPage(poetUrl)
+        .map(page -> {
+          var els = page.select(".poem-group-list li a");
+          return els.stream()
+              .map(el -> String.format("%s/%s", this.baseUrl, el.attr("href")))
+              .collect(Collectors.toList());
+        });
+  }
+
+  public Future<Boolean> fetchPoems() {
+    return getPoetPage()
+        .flatMap(this::getPoemLinks)
+        .flatMap(links -> {
+          var futures = Arrays.asList(
+              links.stream().map(this::getAndSavePoem).toArray(Future[]::new));
+          return Future.future((future) -> CompositeFuture.all(futures)
+              .onComplete(r -> future.complete(r.succeeded())));
+        });
+  }
+
+  private Future<ceres.repository.models.Poem> getAndSavePoem(String link) {
+    return getPoem(link).compose(poem -> poemRepository.save(ceres.repository.models.Poem
+        .builder()
+        .name(poem.getTitle())
+        .url(link)
+        .content(poem.getContent())
+        .author(poet)
+        .build())
     );
   }
 
-  private CompletableFuture<Poem> getPoem(String link) {
-    try {
-      Document page = BaseCrawler.fetchPage(link);
-      Elements poemTitlesEls = page.select(".poem-view-separated > h4");
-      Elements poemContentEls = page.select(".poem-view-separated > p");
-      String pageTitle = page.select(".page-header h1").html();
-      List<String> poemContents = poemContentEls
-          .stream()
-          .filter(el -> !el.text().isEmpty())
-          .map(el -> el.html().replace("<br>", "\n"))
-          .collect(Collectors.toList());
-      List<PoemContent> poems = new ArrayList<>();
-      var index = 0;
-      for (Element title : poemTitlesEls) {
-        var poemContent = poemContents.get(index);
-        var poem = PoemContent.builder()
-            .title(title.text())
-            .content(poemContent)
-            .build();
-        poems.add(poem);
-        index ++;
-      }
-      return CompletableFuture.completedFuture(Poem.builder()
-          .title(pageTitle)
-          .content(poems)
-          .build());
-    } catch (IOException ex) {
-      log.error(String.format("Failed to parse poem from a given link: %s.", link), ex.fillInStackTrace());
-      return CompletableFuture.failedFuture(ex);
+  private Future<Poem> getPoem(String link) {
+    return BaseCrawler.fetchPage(link)
+        .map(this::extractPoem);
+  }
+
+  private Poem extractPoem(Document page) {
+    Elements poemTitlesEls = page.select(".poem-view-separated > h4");
+    Elements poemContentEls = page.select(".poem-view-separated > p");
+    String pageTitle = page.select(".page-header h1").html();
+    List<String> poemContents =
+        poemContentEls.stream()
+            .filter(el -> !el.text().isEmpty())
+            .map(el -> el.html().replace("<br>", "\n"))
+            .collect(Collectors.toList());
+    List<PoemContent> poems = new ArrayList<>();
+    var index = 0;
+    for (Element title : poemTitlesEls) {
+      var poemContent = poemContents.get(index);
+      var poem = PoemContent.builder().title(title.text()).content(poemContent).build();
+      poems.add(poem);
+      index++;
     }
+    return Poem.builder().title(pageTitle).content(poems).build();
   }
 }

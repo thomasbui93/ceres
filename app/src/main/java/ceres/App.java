@@ -4,22 +4,10 @@
 package ceres;
 
 import ceres.configuration.ApplicationConfiguration;
-import ceres.crawler.PoemFetcher;
 import java.io.IOException;
 
-public class App  {
+public class App {
     public static void main(String[] args) throws IOException {
         var config = ApplicationConfiguration.loadFrom("app.yaml");
-        var poemFetcher = new PoemFetcher(config.getCrawler().getPoem());
-        poemFetcher.fetchPoems()
-            .thenApply(poems -> {
-                System.out.println(poems);
-                return null;
-            })
-            .exceptionally(ex -> {
-                System.out.printf("Failed to fetch poems: %s", ex.getMessage());
-                return null;
-            });
-
     }
 }

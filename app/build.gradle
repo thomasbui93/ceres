@@ -12,13 +12,15 @@ plugins {
 }
 
 repositories {
-    // Use JCenter for resolving dependencies.
-    jcenter()
+    maven { url "https://oss.jfrog.org/libs-snapshot" }
 }
 
 def jsonYamlVersion = "2.11.1"
 def lombokVersion = "1.18.16"
 def slf4jVersion = "1.6.1"
+def mongoClientVersion = "2.12.3"
+def guiceVersion = "4.1.0"
+def vertxVersion = "4.0.3"
 
 dependencies {
     // Use JUnit Jupiter API for testing.
@@ -34,6 +36,9 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-databind:$jsonYamlVersion"
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "org.slf4j:slf4j-simple:$slf4jVersion"
+    implementation "com.google.inject:guice:$guiceVersion"
+    implementation "org.mongodb:mongo-java-driver:$mongoClientVersion"
+    implementation "io.vertx:vertx-core:$vertxVersion"
 
     compileOnly "org.projectlombok:lombok:$lombokVersion"
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"

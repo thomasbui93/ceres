@@ -10,6 +10,7 @@ import ceres.repository.PoetRepository;
 import ceres.repository.PoetRepositoryImpl;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.mongodb.DB;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
 import java.io.IOException;
@@ -23,9 +24,14 @@ public class AppModule extends AbstractModule {
     bind(PoemFetcher.class).to(PoemFetcherImpl.class);
   }
 
-  @Provides
   public MongoClient mongoClient() throws UnknownHostException {
-    return new MongoClient(new MongoClientURI(System.getenv("MONGODB_URL")));
+    return new MongoClient(new MongoClientURI(System.getenv("MONGO_URL")));
+  }
+
+  @Provides
+  public DB mongoDB() throws UnknownHostException {
+    var client = mongoClient();
+    return client.getDB("ceres");
   }
 
   @Provides

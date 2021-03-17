@@ -4,6 +4,7 @@ import ceres.configuration.PoemConfiguration;
 import ceres.repository.PoemRepository;
 import ceres.repository.PoetRepository;
 import ceres.repository.models.Poet;
+import com.google.inject.Inject;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import java.net.URLEncoder;
@@ -11,7 +12,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -23,16 +23,14 @@ public class PoemFetcherImpl implements PoemFetcher {
   private final String baseUrl;
   private Poet poet;
 
-  @Inject private final PoetRepository poetRepository;
-  @Inject private final PoemRepository poemRepository;
+  private final PoetRepository poetRepository;
+  private final PoemRepository poemRepository;
 
-  @Inject final PoemConfiguration poemConfiguration;
-
+  @Inject
   public PoemFetcherImpl(
       PoemConfiguration poemConfiguration,
       PoetRepository poetRepository,
       PoemRepository poemRepository) {
-    this.poemConfiguration = poemConfiguration;
     this.poetName = poemConfiguration.getAuthors().get(0);
     this.baseUrl = poemConfiguration.getBaseUrl();
     this.poetRepository = poetRepository;
@@ -108,7 +106,7 @@ public class PoemFetcherImpl implements PoemFetcher {
     return BaseCrawler.fetchPage(link).map(this::extractPoem);
   }
 
-  private Poem extractPoem(Document page) {
+  private Poem extractPoem(@org.jetbrains.annotations.NotNull Document page) {
     Elements poemTitlesEls = page.select(".poem-view-separated > h4");
     Elements poemContentEls = page.select(".poem-view-separated > p");
     String pageTitle = page.select(".page-header h1").html();

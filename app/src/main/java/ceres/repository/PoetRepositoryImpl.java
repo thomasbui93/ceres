@@ -2,8 +2,8 @@ package ceres.repository;
 
 import ceres.repository.models.Poet;
 import com.mongodb.BasicDBObject;
+import com.mongodb.DB;
 import com.mongodb.DBCollection;
-import com.mongodb.MongoClient;
 import com.mongodb.MongoException;
 import io.vertx.core.Future;
 import javax.inject.Inject;
@@ -12,8 +12,7 @@ public class PoetRepositoryImpl implements PoetRepository {
   private final DBCollection collection;
 
   @Inject
-  public PoetRepositoryImpl(MongoClient mongoClient) {
-    var db = mongoClient.getDB(System.getenv("MONGO_DATABASE_NAME"));
+  public PoetRepositoryImpl(DB db) {
     this.collection = db.getCollection("poets");
   }
 

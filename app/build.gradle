@@ -12,11 +12,20 @@ plugins {
 }
 
 repositories {
-    // Use JCenter for resolving dependencies.
-    jcenter()
+    maven { url "https://oss.jfrog.org/libs-snapshot" }
 }
 
+def jsonYamlVersion = "2.11.1"
+def lombokVersion = "1.18.16"
+def slf4jVersion = "1.6.1"
+def mongoClientVersion = "3.11.0"
+def guiceVersion = "4.1.0"
+def vertxVersion = "4.0.3"
+def redisVersion = "2.8.1"
+
 dependencies {
+    implementation 'org.jetbrains:annotations:20.1.0'
+
     // Use JUnit Jupiter API for testing.
     testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.2'
 
@@ -24,11 +33,18 @@ dependencies {
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
 
     // This dependency is used by the application.
-    implementation 'com.google.guava:guava:29.0-jre'
-    implementation 'org.jsoup:jsoup:1.13.1'
+    implementation "com.google.guava:guava:29.0-jre"
+    implementation "org.jsoup:jsoup:1.13.1"
+    implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jsonYamlVersion"
+    implementation "com.fasterxml.jackson.core:jackson-databind:$jsonYamlVersion"
+    implementation "org.slf4j:slf4j-api:$slf4jVersion"
+    implementation "org.slf4j:slf4j-simple:$slf4jVersion"
+    implementation "com.google.inject:guice:$guiceVersion"
+    implementation "io.vertx:vertx-core:$vertxVersion"
+    implementation "redis.clients:jedis:$redisVersion"
 
-    compileOnly 'org.projectlombok:lombok:1.18.16'
-    annotationProcessor 'org.projectlombok:lombok:1.18.16'
+    compileOnly "org.projectlombok:lombok:$lombokVersion"
+    annotationProcessor "org.projectlombok:lombok:$lombokVersion"
 }
 
 application {

@@ -1,49 +1,56 @@
 package ceres.repository;
 
-import ceres.exception.crawler.AuthorPageNotFoundException;
-import ceres.exception.crawler.PoemLinksFetchingException;
+import ceres.crawler.PoemContent;
 import ceres.repository.models.Poem;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.mongodb.BasicDBObject;
-import com.mongodb.MongoException;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import io.vertx.core.Future;
+import java.util.List;
 import javax.inject.Inject;
+import redis.clients.jedis.Jedis;
 
 public class PoemRepositoryImpl implements PoemRepository {
-  final private MongoCollection<org.bson.Document> collection;
+  final private Jedis redis;
+
+  final private String collectionName = "poems";
 
   @Inject
-  public PoemRepositoryImpl(MongoDatabase db) {
-    this.collection = db.getCollection("poems");
+  public PoemRepositoryImpl(Jedis redis) {
+    this.redis = redis;
   }
 
   @Override
   public Future<Poem> save(Poem poem) {
     return Future.future((future) -> {
       try {
-        this.collection.insertOne(poem.toMongoRow());
+        this.redis.hset(collectionName, poem.getUrl(), poem.toJson());
         future.complete(poem);
-      } catch (MongoException | JsonProcessingException ex) {
+      } catch (JsonProcessingException ex) {
         future.fail(ex);
       }
     });
   }
 
   @Override
-  public Future<Poem> update(String poemUrl, String content) {
+  public Future<Poem> update(String poemUrl, List<PoemContent> content) {
     return Future.future((future) -> {
       try {
-        var filter = new BasicDBObject("url", poemUrl);
-        var update = new BasicDBObject("content", content);
-        var poem = this.collection.findOneAndUpdate(filter, update);
-        if (poem == null) {
-          future.fail(new PoemLinksFetchingException());
-        } else {
-          future.complete(Poem.fromMongo(poem));
-        }
-      } catch (MongoException | JsonProcessingException ex) {
+        var poem = Poem.fromJson(this.redis.hget(collectionName, poemUrl));
+        poem.setContent(content);
+        this.redis.hset(collectionName, poemUrl, poem.toJson());
+        future.complete(poem);
+      } catch (JsonProcessingException ex) {
+        future.fail(ex);
+      }
+    });
+  }
+
+  @Override
+  public Future<Poem> get(String poemUrl) {
+    return Future.future((future) -> {
+      try {
+        var poem = Poem.fromJson(this.redis.hget(collectionName, poemUrl));
+        future.complete(poem);
+      } catch (JsonProcessingException ex) {
         future.fail(ex);
       }
     });

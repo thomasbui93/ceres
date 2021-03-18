@@ -1,6 +1,7 @@
 package ceres.crawler;
 
 import ceres.configuration.PoemConfiguration;
+import ceres.exception.crawler.AuthorPageNotFoundException;
 import ceres.repository.PoemRepository;
 import ceres.repository.PoetRepository;
 import ceres.repository.models.Poet;
@@ -38,30 +39,40 @@ public class PoemFetcherImpl implements PoemFetcher {
   }
 
   private Future<String> getPoetPage() {
-    var uniqueId = String.join("_",poetName.split(" "));
-    return Future.future(future -> {
-      this.poetRepository
-          .get(poetName)
-          .onComplete(r -> {
-            if (r.failed()) {
-              this.fetchPoetPage().onSuccess(pageUrl -> {
-                this.poetRepository.save(Poet
-                    .builder()
-                    .poetName(poetName)
-                    .poetUrl(pageUrl)
-                    .id(uniqueId)
-                  .build()
-                ).onComplete(re -> {
-                  log.info(String.format("Saving poet to db succeeded: %s", re.succeeded()));
-                  future.complete(pageUrl);
-                });
-              }).onFailure(future::fail);
-            } else {
-              poet = r.result();
-              future.complete(poet.getPoetUrl());
-            }
-          });
-    });
+    var uniqueId = String.join("_", poetName.split(" "));
+    return Future.future(
+        future -> {
+          this.poetRepository
+              .get(poetName)
+              .onComplete(
+                  r -> {
+                    if (r.failed()) {
+                      this.fetchPoetPage()
+                          .onSuccess(
+                              pageUrl -> {
+                                this.poetRepository
+                                    .save(
+                                        Poet.builder()
+                                            .poetName(poetName)
+                                            .poetUrl(pageUrl)
+                                            .id(uniqueId)
+                                            .build())
+                                    .onComplete(
+                                        re -> {
+                                          log.info(
+                                              String.format(
+                                                  "Saving poet to db succeeded: %s",
+                                                  re.succeeded()));
+                                          future.complete(pageUrl);
+                                        });
+                              })
+                          .onFailure(future::fail);
+                    } else {
+                      poet = r.result();
+                      future.complete(poet.getPoetUrl());
+                    }
+                  });
+        });
   }
 
   private Future<String> fetchPoetPage() {
@@ -87,7 +98,7 @@ public class PoemFetcherImpl implements PoemFetcher {
 
   public Future<Boolean> fetchPoems() {
     return getPoetPage()
-        .compose(this::getPoemLinks)
+        .compose(this::fetchPoemLinks)
         .compose(
             links -> {
               var futures =
@@ -98,17 +109,57 @@ public class PoemFetcherImpl implements PoemFetcher {
             });
   }
 
+  private Future<List<String>> fetchPoemLinks(String poetUrl) {
+    return Future.future(
+        future -> {
+          poetRepository
+              .get(poetName)
+              .onComplete(
+                  r -> {
+                    if (r.failed()) {
+                      future.fail(new AuthorPageNotFoundException());
+                    } else {
+                      var poet = r.result();
+                      if (poet.getLinks().size() == 0) {
+                        getPoemLinks(poetUrl)
+                            .onComplete(
+                                linksRaw -> {
+                                  if (linksRaw.failed()) {
+                                    future.fail(linksRaw.cause());
+                                  } else {
+                                    poet.setLinks(linksRaw.result());
+                                    poetRepository
+                                        .save(poet)
+                                        .onComplete(
+                                            (re) -> {
+                                              if (re.failed()) {
+                                                log.error("Failed to save links to poets db.");
+                                              }
+                                              future.complete(linksRaw.result());
+                                            });
+                                  }
+                                });
+                      } else {
+                        future.complete(poet.getLinks());
+                      }
+                    }
+                  });
+        });
+  }
+
   private Future<ceres.repository.models.Poem> getAndSavePoem(String link) {
-    return getPoem(link)
-        .compose(
-            poem ->
-                poemRepository.save(
-                    ceres.repository.models.Poem.builder()
-                        .name(poem.getTitle())
-                        .url(link)
-                        .content(poem.getContent())
-                        .author(poet)
-                        .build()));
+    return poemRepository.get(link)
+        .recover(ex -> getPoem(link)
+            .compose(
+                poem ->
+                    poemRepository.save(
+                        ceres.repository.models.Poem.builder()
+                            .name(poem.getTitle())
+                            .url(link)
+                            .content(poem.getContent())
+                            .author(poetName)
+                            .build()))
+        );
   }
 
   private Future<Poem> getPoem(String link) {

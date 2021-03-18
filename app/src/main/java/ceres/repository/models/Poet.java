@@ -1,30 +1,28 @@
 package ceres.repository.models;
 
-import com.mongodb.DBObject;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import java.util.List;
 import lombok.Builder;
 import lombok.Data;
-import org.bson.Document;
 
+@JsonDeserialize(using = PoetDeserializer.class)
 @Builder
 @Data
 public class Poet {
   String id;
   String poetName;
   String poetUrl;
+  @Builder.Default List<String> links = List.of();
 
-  public Document toMongoRow() {
-    var uniqueId = String.join("_",poetName.split(" "));
-    return new Document("_id", uniqueId)
-        .append("name", poetName)
-        .append("url", poetUrl);
+  public String toJson() throws JsonProcessingException {
+    var mapper = new ObjectMapper();
+    return mapper.writeValueAsString(this);
   }
 
-  public static Poet fromMongo(Document row) {
-    return Poet
-        .builder()
-        .id(row.get("_id").toString())
-        .poetName(row.get("name").toString())
-        .poetUrl(row.get("url").toString())
-        .build();
+  public static Poet fromJson(String json) throws JsonProcessingException {
+    var mapper = new ObjectMapper();
+    return mapper.readValue(json, Poet.class);
   }
 }

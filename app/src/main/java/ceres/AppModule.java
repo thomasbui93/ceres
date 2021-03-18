@@ -10,11 +10,9 @@ import ceres.repository.PoetRepository;
 import ceres.repository.PoetRepositoryImpl;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoClients;
-import com.mongodb.client.MongoDatabase;
 import java.io.IOException;
 import java.net.UnknownHostException;
+import redis.clients.jedis.Jedis;
 
 public class AppModule extends AbstractModule {
   @Override
@@ -24,14 +22,9 @@ public class AppModule extends AbstractModule {
     bind(PoemFetcher.class).to(PoemFetcherImpl.class);
   }
 
-  public MongoClient mongoClient() {
-    return MongoClients.create(System.getenv("MONGO_URL"));
-  }
-
   @Provides
-  public MongoDatabase mongoDB() throws UnknownHostException {
-    var client = mongoClient();
-    return client.getDatabase("ceres");
+  public Jedis redis() throws UnknownHostException {
+    return new Jedis();
   }
 
   @Provides

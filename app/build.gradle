@@ -21,6 +21,7 @@ def slf4jVersion = "1.6.1"
 def mongoClientVersion = "3.11.0"
 def guiceVersion = "4.1.0"
 def vertxVersion = "4.0.3"
+def redisVersion = "2.8.1"
 
 dependencies {
     implementation 'org.jetbrains:annotations:20.1.0'
@@ -39,8 +40,8 @@ dependencies {
     implementation "org.slf4j:slf4j-api:$slf4jVersion"
     implementation "org.slf4j:slf4j-simple:$slf4jVersion"
     implementation "com.google.inject:guice:$guiceVersion"
-    implementation "org.mongodb:mongodb-driver-sync:$mongoClientVersion"
     implementation "io.vertx:vertx-core:$vertxVersion"
+    implementation "redis.clients:jedis:$redisVersion"
 
     compileOnly "org.projectlombok:lombok:$lombokVersion"
     annotationProcessor "org.projectlombok:lombok:$lombokVersion"

@@ -38,21 +38,30 @@ public class PoemFetcherImpl implements PoemFetcher {
   }
 
   private Future<String> getPoetPage() {
-    return this.poetRepository
-        .get(poetName)
-        .flatMap(
-            poet -> {
-              this.poet = poet;
-              if (poet == null) {
-                return fetchPoetPage()
-                    .flatMap(
-                        poetPage ->
-                            this.poetRepository.save(
-                                Poet.builder().poetUrl(poetPage).poetName(poetName).build()))
-                    .map(Poet::getPoetUrl);
-              }
-              return Future.succeededFuture(poet.getPoetUrl());
-            });
+    var uniqueId = String.join("_",poetName.split(" "));
+    return Future.future(future -> {
+      this.poetRepository
+          .get(poetName)
+          .onComplete(r -> {
+            if (r.failed()) {
+              this.fetchPoetPage().onSuccess(pageUrl -> {
+                this.poetRepository.save(Poet
+                    .builder()
+                    .poetName(poetName)
+                    .poetUrl(pageUrl)
+                    .id(uniqueId)
+                  .build()
+                ).onComplete(re -> {
+                  log.info(String.format("Saving poet to db succeeded: %s", re.succeeded()));
+                  future.complete(pageUrl);
+                });
+              }).onFailure(future::fail);
+            } else {
+              poet = r.result();
+              future.complete(poet.getPoetUrl());
+            }
+          });
+    });
   }
 
   private Future<String> fetchPoetPage() {
@@ -78,8 +87,8 @@ public class PoemFetcherImpl implements PoemFetcher {
 
   public Future<Boolean> fetchPoems() {
     return getPoetPage()
-        .flatMap(this::getPoemLinks)
-        .flatMap(
+        .compose(this::getPoemLinks)
+        .compose(
             links -> {
               var futures =
                   Arrays.asList(links.stream().map(this::getAndSavePoem).toArray(Future[]::new));

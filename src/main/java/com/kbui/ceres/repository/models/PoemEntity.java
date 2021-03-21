@@ -30,4 +30,8 @@ public class PoemEntity {
     var mapper = new ObjectMapper();
     return mapper.readValue(json, PoemEntity.class);
   }
+
+  public static PoemEntity empty() {
+    return PoemEntity.builder().build();
+  }
 }

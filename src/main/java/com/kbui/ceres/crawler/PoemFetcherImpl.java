@@ -27,14 +27,11 @@ public class PoemFetcherImpl implements PoemFetcher {
   private static final Logger log = LoggerFactory.getLogger(PoemCrawlerTask.class);
   private Poet poet;
 
-  @Autowired
-  private PoetRepository poetRepository;
+  @Autowired private PoetRepository poetRepository;
 
-  @Autowired
-  private PoemRepository poemRepository;
+  @Autowired private PoemRepository poemRepository;
 
-  @Autowired
-  CrawlerPoemConfiguration poemConfiguration;
+  @Autowired CrawlerPoemConfiguration poemConfiguration;
 
   public String getPoetName() {
     return poemConfiguration.getAuthors().get(0);
@@ -46,16 +43,25 @@ public class PoemFetcherImpl implements PoemFetcher {
 
   private Future<String> getPoetPage() {
     var uniqueId = String.join("_", getPoetName().split(" "));
-    return poetRepository.get(getPoetName())
-        .recover(ex -> fetchPoetPage()
-            .compose(pageUrl -> poetRepository.save(Poet.builder()
-                .poetName(getPoetName())
-                .poetUrl(pageUrl)
-                .id(uniqueId)
-                .build())
-            )
-            .onFailure(e -> log.error(String.format("Failed to save poet to db: %s, %s", getPoetName(), e.getMessage())))
-        )
+    return poetRepository
+        .get(getPoetName())
+        .recover(
+            ex ->
+                fetchPoetPage()
+                    .compose(
+                        pageUrl ->
+                            poetRepository.save(
+                                Poet.builder()
+                                    .poetName(getPoetName())
+                                    .poetUrl(pageUrl)
+                                    .id(uniqueId)
+                                    .build()))
+                    .onFailure(
+                        e ->
+                            log.error(
+                                String.format(
+                                    "Failed to save poet to db: %s, %s",
+                                    getPoetName(), e.getMessage()))))
         .compose(p -> Future.succeededFuture(p.getPoetUrl()));
   }
 
@@ -96,37 +102,75 @@ public class PoemFetcherImpl implements PoemFetcher {
   private Future<List<String>> fetchPoemLinks(String poetUrl) {
     return poetRepository
         .get(getPoetName())
-        .compose(poet -> {
-          if (poet.getLinks().size() == 0) {
-            return getPoemLinks(poetUrl)
-                .compose(links -> {
-                  poet.setLinks(links);
-                  return poetRepository
-                      .save(poet)
-                      .compose(re -> Future.succeededFuture(links))
-                      .onFailure(ex -> log.error(String.format("Failed to save links to poets db: %s", ex.getMessage())));
-                })
-                .onFailure(ex -> log.error(String.format("Failed to fetch links from poet page: %s", ex.getMessage())));
-          } else {
-            return Future.succeededFuture(poet.getLinks());
-          }
-        })
+        .compose(
+            poet -> {
+              if (poet.getLinks().size() == 0) {
+                return getPoemLinks(poetUrl)
+                    .compose(
+                        links -> {
+                          poet.setLinks(links);
+                          return poetRepository
+                              .save(poet)
+                              .compose(re -> Future.succeededFuture(links))
+                              .onFailure(
+                                  ex ->
+                                      log.error(
+                                          String.format(
+                                              "Failed to save links to poets db: %s",
+                                              ex.getMessage())));
+                        })
+                    .onFailure(
+                        ex ->
+                            log.error(
+                                String.format(
+                                    "Failed to fetch links from poet page: %s", ex.getMessage())));
+              } else {
+                return Future.succeededFuture(poet.getLinks());
+              }
+            })
         .onFailure(ex -> log.error("Poet not found."));
   }
 
   private Future<PoemEntity> getAndSavePoem(String link) {
-    return poemRepository.get(link)
-        .recover(ex -> getPoem(link)
-            .compose(
-                poem ->
-                    poemRepository.save(
-                        PoemEntity.builder()
-                            .name(poem.getTitle())
-                            .url(link)
-                            .content(poem.getContent())
-                            .author(getPoetName())
-                            .build()))
-        );
+    return poemRepository
+        .get(link)
+        .compose(this::updatePoem)
+        .recover(ex -> this.createPoem(link));
+  }
+
+  private Future<PoemEntity> createPoem(String link) {
+    return getPoem(link)
+        .compose(
+            poem ->
+                poemRepository.save(
+                    PoemEntity.builder()
+                        .name(poem.getTitle())
+                        .url(link)
+                        .content(poem.getContent())
+                        .author(getPoetName())
+                        .build()))
+        .recover(
+            e -> {
+              log.error("Failed to fetch poem...Gonna try latter in the next task.", e);
+              return Future.succeededFuture(PoemEntity.empty());
+            });
+  }
+
+  private Future<PoemEntity> updatePoem(PoemEntity poemEntity) {
+    if (poemEntity.getContent().size() == 0
+        || poemEntity.getName().isEmpty()) { // in case we were detected by bot.
+      return getPoem(poemEntity.getUrl())
+          .compose(p -> poemRepository.update(poemEntity.getUrl(), p.getContent(), p.getTitle()))
+          .recover(
+              ex -> {
+                log.error(
+                    "Failed to update failed fetch attempt...Gonna try latter in the next task.",
+                    ex);
+                return Future.succeededFuture(PoemEntity.empty());
+              });
+    } else {
+      return Future.succeededFuture(poemEntity);
+    }
   }
 
   private Future<Poem> getPoem(String link) {

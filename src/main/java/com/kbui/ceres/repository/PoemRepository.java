@@ -9,6 +9,6 @@ import org.springframework.stereotype.Service;
 @Service
 public interface PoemRepository {
   public Future<PoemEntity> save(PoemEntity poem);
-  public Future<PoemEntity> update(String poemUrl, List<PoemContent> content);
+  public Future<PoemEntity> update(String poemUrl, List<PoemContent> content, String title);
   public Future<PoemEntity> get(String poemUrl);
 }

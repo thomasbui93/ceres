@@ -35,11 +35,12 @@ public class PoemRepositoryImpl implements PoemRepository {
   }
 
   @Override
-  public Future<PoemEntity> update(String poemUrl, List<PoemContent> content) {
+  public Future<PoemEntity> update(String poemUrl, List<PoemContent> content, String title) {
     return Future.future((future) -> {
       try {
         var poem = PoemEntity.fromJson(this.redis.hget(collectionName, poemUrl));
         poem.setContent(content);
+        poem.setName(title);
         this.redis.hset(collectionName, poemUrl, poem.toJson());
         future.complete(poem);
       } catch (JsonProcessingException ex) {

@@ -26,19 +26,34 @@ import org.springframework.stereotype.Component;
 public class PoemFetcherImpl implements PoemFetcher {
   private static final Logger log = LoggerFactory.getLogger(PoemCrawlerTask.class);
   private Poet poet;
+  private String poetName;
+  private String baseUrl;
 
   @Autowired private PoetRepository poetRepository;
 
   @Autowired private PoemRepository poemRepository;
 
-  @Autowired CrawlerPoemConfiguration poemConfiguration;
-
   public String getPoetName() {
-    return poemConfiguration.getAuthors().get(0);
+    return poetName;
   }
 
   public String getBaseUrl() {
-    return poemConfiguration.getBaseUrl();
+    return baseUrl;
+  }
+
+  public Future<Boolean> fetchPoems(String poetName, String baseUrl) {
+    this.poetName = poetName;
+    this.baseUrl = baseUrl;
+    return getPoetPage()
+        .compose(this::fetchPoemLinks)
+        .compose(
+            links -> {
+              var futures =
+                  Arrays.asList(links.stream().map(this::getAndSavePoem).toArray(Future[]::new));
+              return Future.future(
+                  (future) ->
+                      CompositeFuture.all(futures).onComplete(r -> future.complete(r.succeeded())));
+            });
   }
 
   private Future<String> getPoetPage() {
@@ -83,19 +98,6 @@ public class PoemFetcherImpl implements PoemFetcher {
               return els.stream()
                   .map(el -> String.format("%s/%s", getBaseUrl(), el.attr("href")))
                   .collect(Collectors.toList());
-            });
-  }
-
-  public Future<Boolean> fetchPoems() {
-    return getPoetPage()
-        .compose(this::fetchPoemLinks)
-        .compose(
-            links -> {
-              var futures =
-                  Arrays.asList(links.stream().map(this::getAndSavePoem).toArray(Future[]::new));
-              return Future.future(
-                  (future) ->
-                      CompositeFuture.all(futures).onComplete(r -> future.complete(r.succeeded())));
             });
   }
 

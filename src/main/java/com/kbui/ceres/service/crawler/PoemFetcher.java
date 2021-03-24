@@ -1,4 +1,4 @@
-package com.kbui.ceres.crawler;
+package com.kbui.ceres.service.crawler;
 
 import io.vertx.core.Future;
 

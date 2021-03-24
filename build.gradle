@@ -6,7 +6,6 @@ plugins {
 
 group = 'com.kbui'
 version = '0.0.1-SNAPSHOT'
-sourceCompatibility = '11'
 
 def lombokVersion = "1.18.16"
 def vertxVersion = "4.0.3"
@@ -19,7 +18,8 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter'
+	implementation "org.springframework.boot:spring-boot-starter"
+	implementation "org.springframework.boot:spring-boot-starter-data-mongodb"
 	implementation "io.vertx:vertx-core:$vertxVersion"
 	implementation "redis.clients:jedis:$redisVersion"
 	implementation "org.jsoup:jsoup:$jsoupVersion"

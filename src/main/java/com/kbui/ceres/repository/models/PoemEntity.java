@@ -1,9 +1,11 @@
 package com.kbui.ceres.repository.models;
 
-import com.kbui.ceres.crawler.PoemContent;
+import com.kbui.ceres.service.crawler.PoemContent;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.kbui.ceres.service.sync.PoemDocument;
+import com.kbui.ceres.service.sync.PoetDocument;
 import java.util.List;
 import java.util.UUID;
 import lombok.Builder;
@@ -33,5 +35,14 @@ public class PoemEntity {
 
   public static PoemEntity empty() {
     return PoemEntity.builder().build();
+  }
+
+  public PoemDocument toPoemDocument(PoetDocument poetDocument) {
+    return PoemDocument.builder()
+        .poet(poetDocument)
+        .content(content)
+        .url(url)
+        .name(name)
+        .build();
   }
 }

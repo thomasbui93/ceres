@@ -1,4 +1,4 @@
-package com.kbui.ceres.crawler;
+package com.kbui.ceres.service.crawler;
 
 import java.util.List;
 import lombok.Builder;

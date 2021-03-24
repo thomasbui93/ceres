@@ -18,7 +18,7 @@ public class PoemSyncTask {
 
   private static final SimpleDateFormat dateFormat = new SimpleDateFormat("HH:mm:ss");
 
-  @Scheduled(fixedRate = 1000 * 60 * 60)
+  @Scheduled(fixedRate = 2 * 1000 * 60 * 60)
   public void syncPoems() {
     log.info("About to sync poems, starting now: {}", dateFormat.format(new Date()));
     service.syncRedisToMongoDb()

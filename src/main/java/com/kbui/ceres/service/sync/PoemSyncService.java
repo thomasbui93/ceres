@@ -89,7 +89,7 @@ public class PoemSyncService {
                 var poem = mongoTemplate.insert(poemDocument, "poems");
                 return Future.succeededFuture(poem);
               } catch (Exception ex) {
-                log.error("Failed to sync poem to db", ex);
+                log.error("Failed to sync poem to db: {}", ex.getMessage());
                 return Future.succeededFuture(PoemDocument.builder().build());
               }
             });

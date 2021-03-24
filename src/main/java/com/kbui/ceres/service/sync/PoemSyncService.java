@@ -48,7 +48,7 @@ public class PoemSyncService {
             log.info("Poet does not exist, created one. {}", author);
             return Pair.of(poet, poetDocument);
           } catch (Exception ex) {
-            var query = new Query(Criteria.where("url").is(poet.getPoetUrl()));
+            var query = new Query(Criteria.where("poetUrl").is(poet.getPoetUrl()));
             var poetDoc = mongoTemplate.findOne(query, PoetDocument.class, "poets");
             if (poetDoc == null) {
               log.error("Failed to sync poet to db", ex);

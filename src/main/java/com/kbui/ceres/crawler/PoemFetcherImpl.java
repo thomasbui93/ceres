@@ -1,6 +1,6 @@
 package com.kbui.ceres.crawler;
 
-import com.kbui.ceres.config.CrawlerPoemConfiguration;
+import com.kbui.ceres.exception.crawler.PoemFetchingException;
 import com.kbui.ceres.repository.PoemRepository;
 import com.kbui.ceres.repository.PoetRepository;
 import com.kbui.ceres.repository.models.PoemEntity;
@@ -137,7 +137,12 @@ public class PoemFetcherImpl implements PoemFetcher {
     return poemRepository
         .get(link)
         .compose(this::updatePoem)
-        .recover(ex -> this.createPoem(link));
+        .recover(ex -> this.createPoem(link))
+        .onComplete(r -> {
+          if (r.result().getId() != null) {
+            log.info("Link fetching done: {}", link);
+          }
+        });
   }
 
   private Future<PoemEntity> createPoem(String link) {
@@ -166,8 +171,7 @@ public class PoemFetcherImpl implements PoemFetcher {
           .recover(
               ex -> {
                 log.error(
-                    "Failed to update failed fetch attempt...Gonna try latter in the next task.",
-                    ex);
+                    "Failed to update failed fetch attempt...Gonna try latter in the next task.");
                 return Future.succeededFuture(PoemEntity.empty());
               });
     } else {
@@ -176,13 +180,32 @@ public class PoemFetcherImpl implements PoemFetcher {
   }
 
   private Future<Poem> getPoem(String link) {
-    return BaseCrawler.fetchPage(link).map(this::extractPoem);
+    return BaseCrawler.fetchPage(link).flatMap(page -> {
+      try {
+        var poem = this.extractPoem(page);
+        return Future.succeededFuture(poem);
+      } catch (PoemFetchingException ex) {
+        log.error("Failed to fetch poem in this link: {}", link);
+        return Future.failedFuture(ex);
+      }
+    });
   }
 
-  private Poem extractPoem(@NonNull Document page) {
+  private Poem extractPoem(@NonNull Document page) throws PoemFetchingException {
     Elements poemTitlesEls = page.select(".poem-view-separated > h4");
     Elements poemContentEls = page.select(".poem-view-separated > p");
     String pageTitle = page.select(".page-header h1").html();
+    if (poemContentEls.size() == 0) {
+      Element poemContentEl = page.select(".poem-content > p").first();
+      if (poemContentEl == null) {
+        throw new PoemFetchingException();
+      }
+      var poemContent = poemContentEl.html().replace("<br>", "\n");
+      return Poem.builder()
+          .title(pageTitle)
+          .content(List.of(PoemContent.builder().title(pageTitle).content(poemContent).build()))
+          .build();
+    }
     List<String> poemContents =
         poemContentEls.stream()
             .filter(el -> !el.text().isEmpty())

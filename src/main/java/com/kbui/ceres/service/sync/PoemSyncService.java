@@ -45,9 +45,9 @@ public class PoemSyncService {
         .map(poet -> {
           try {
             var poetDocument = mongoTemplate.insert(poet.toPoetDocument(), "poets");
+            log.info("Poet does not exist, created one. {}", author);
             return Pair.of(poet, poetDocument);
           } catch (Exception ex) {
-
             var query = new Query(Criteria.where("url").is(poet.getPoetUrl()));
             var poetDoc = mongoTemplate.findOne(query, PoetDocument.class, "poets");
             if (poetDoc == null) {
@@ -89,7 +89,7 @@ public class PoemSyncService {
                 var poem = mongoTemplate.insert(poemDocument, "poems");
                 return Future.succeededFuture(poem);
               } catch (Exception ex) {
-                log.error("Failed to sync poem to db: {}", ex.getMessage());
+                log.info("Failed to sync poem to db: {}. Skip it.", ex.getMessage());
                 return Future.succeededFuture(PoemDocument.builder().build());
               }
             });

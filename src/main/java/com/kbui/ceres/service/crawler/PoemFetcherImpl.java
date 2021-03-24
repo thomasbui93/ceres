@@ -1,4 +1,4 @@
-package com.kbui.ceres.crawler;
+package com.kbui.ceres.service.crawler;
 
 import com.kbui.ceres.exception.crawler.PoemFetchingException;
 import com.kbui.ceres.repository.PoemRepository;

@@ -1,7 +1,7 @@
 package com.kbui.ceres.service.crawler.parser;
 
-import com.kbui.ceres.service.crawler.Poem;
-import com.kbui.ceres.service.crawler.PoemContent;
+import com.kbui.ceres.service.crawler.entity.Poem;
+import com.kbui.ceres.service.crawler.entity.PoemContent;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

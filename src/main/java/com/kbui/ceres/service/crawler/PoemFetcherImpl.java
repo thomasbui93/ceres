@@ -6,6 +6,7 @@ import com.kbui.ceres.repository.PoetRepository;
 import com.kbui.ceres.repository.models.PoemEntity;
 import com.kbui.ceres.repository.models.Poet;
 import com.kbui.ceres.scheduler.PoemCrawlerTask;
+import com.kbui.ceres.service.crawler.entity.Poem;
 import com.kbui.ceres.service.crawler.parser.PoemParserService;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;

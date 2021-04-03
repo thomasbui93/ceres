@@ -1,4 +1,4 @@
-package com.kbui.ceres.service.crawler;
+package com.kbui.ceres.service.crawler.entity;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;

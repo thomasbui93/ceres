@@ -17,8 +17,7 @@ import org.springframework.stereotype.Component;
 public class PoemParserService {
   private static final Logger log = LoggerFactory.getLogger(PoemParserService.class);
 
-  @Autowired
-  private PoemRepository poemRepository;
+  @Autowired private PoemRepository poemRepository;
 
   public Future<PoemEntity> getAndSavePoem(String link, String poetName) {
     return poemRepository

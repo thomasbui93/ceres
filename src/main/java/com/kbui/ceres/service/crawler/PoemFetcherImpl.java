@@ -37,7 +37,7 @@ public class PoemFetcherImpl implements PoemFetcher {
     this.poetName = poetName;
     this.baseUrl = baseUrl;
     return getPoetPage()
-        .compose(this::fetchPoemLinks)
+        .compose(this::getPoemLinks)
         .compose(
             links -> {
               var futures =
@@ -52,20 +52,12 @@ public class PoemFetcherImpl implements PoemFetcher {
   }
 
   private Future<String> getPoetPage() {
-    var uniqueId = String.join("_", getPoetName().split(" "));
     return poetRepository
         .get(getPoetName())
         .recover(
             ex ->
                 fetchPoetPage()
-                    .compose(
-                        pageUrl ->
-                            poetRepository.save(
-                                Poet.builder()
-                                    .poetName(getPoetName())
-                                    .poetUrl(pageUrl)
-                                    .id(uniqueId)
-                                    .build()))
+                    .compose(this::savePoet)
                     .onFailure(
                         e ->
                             log.error(
@@ -73,6 +65,16 @@ public class PoemFetcherImpl implements PoemFetcher {
                                     "Failed to save poet to db: %s, %s",
                                     getPoetName(), e.getMessage()))))
         .compose(p -> Future.succeededFuture(p.getPoetUrl()));
+  }
+
+  private Future<Poet> savePoet(String poetPageUrl) {
+    var uniqueId = String.join("_", getPoetName().split(" "));
+    return poetRepository.save(
+            Poet.builder()
+                .poetName(getPoetName())
+                .poetUrl(poetPageUrl)
+                .id(uniqueId)
+                .build());
   }
 
   private Future<String> fetchPoetPage() {
@@ -86,17 +88,6 @@ public class PoemFetcherImpl implements PoemFetcher {
   }
 
   private Future<List<String>> getPoemLinks(String poetUrl) {
-    return BaseCrawler.fetchPage(poetUrl)
-        .map(
-            page -> {
-              var els = page.select(".poem-group-list li a");
-              return els.stream()
-                  .map(el -> String.format("%s/%s", getBaseUrl(), el.attr("href")))
-                  .collect(Collectors.toList());
-            });
-  }
-
-  private Future<List<String>> fetchPoemLinks(String poetUrl) {
     return poetRepository
         .get(getPoetName())
         .compose(
@@ -108,7 +99,7 @@ public class PoemFetcherImpl implements PoemFetcher {
   }
 
   private Future<List<String>> remotePoemLinks(String poetUrl) {
-    return getPoemLinks(poetUrl)
+    return fetchPoemLinks(poetUrl)
         .compose(
             links -> {
               poet.setLinks(links);
@@ -125,5 +116,16 @@ public class PoemFetcherImpl implements PoemFetcher {
             ex ->
                 log.error(
                     String.format("Failed to fetch links from poet page: %s", ex.getMessage())));
+  }
+
+  private Future<List<String>> fetchPoemLinks(String poetUrl) {
+    return BaseCrawler.fetchPage(poetUrl)
+        .map(
+            page -> {
+              var els = page.select(".poem-group-list li a");
+              return els.stream()
+                  .map(el -> String.format("%s/%s", getBaseUrl(), el.attr("href")))
+                  .collect(Collectors.toList());
+            });
   }
 }

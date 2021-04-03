@@ -1,22 +1,18 @@
 package com.kbui.ceres.service.crawler;
 
-import com.kbui.ceres.exception.crawler.PoemFetchingException;
+import com.kbui.ceres.exception.crawler.PoemParsingException;
 import com.kbui.ceres.repository.PoemRepository;
 import com.kbui.ceres.repository.PoetRepository;
 import com.kbui.ceres.repository.models.PoemEntity;
 import com.kbui.ceres.repository.models.Poet;
 import com.kbui.ceres.scheduler.PoemCrawlerTask;
+import com.kbui.ceres.service.crawler.parser.PoemParserService;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-import lombok.NonNull;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -105,32 +101,31 @@ public class PoemFetcherImpl implements PoemFetcher {
     return poetRepository
         .get(getPoetName())
         .compose(
-            poet -> {
-              if (poet.getLinks().size() == 0) {
-                return getPoemLinks(poetUrl)
-                    .compose(
-                        links -> {
-                          poet.setLinks(links);
-                          return poetRepository
-                              .save(poet)
-                              .compose(re -> Future.succeededFuture(links))
-                              .onFailure(
-                                  ex ->
-                                      log.error(
-                                          String.format(
-                                              "Failed to save links to poets db: %s",
-                                              ex.getMessage())));
-                        })
-                    .onFailure(
-                        ex ->
-                            log.error(
-                                String.format(
-                                    "Failed to fetch links from poet page: %s", ex.getMessage())));
-              } else {
-                return Future.succeededFuture(poet.getLinks());
-              }
-            })
+            poet ->
+                poet.getLinks().size() == 0
+                    ? remotePoemLinks(poetUrl)
+                    : Future.succeededFuture(poet.getLinks()))
         .onFailure(ex -> log.error("Poet not found."));
+  }
+
+  private Future<List<String>> remotePoemLinks(String poetUrl) {
+    return getPoemLinks(poetUrl)
+        .compose(
+            links -> {
+              poet.setLinks(links);
+              return poetRepository
+                  .save(poet)
+                  .compose(re -> Future.succeededFuture(links))
+                  .onFailure(
+                      ex ->
+                          log.error(
+                              String.format(
+                                  "Failed to save links to poets db: %s", ex.getMessage())));
+            })
+        .onFailure(
+            ex ->
+                log.error(
+                    String.format("Failed to fetch links from poet page: %s", ex.getMessage())));
   }
 
   private Future<PoemEntity> getAndSavePoem(String link) {
@@ -138,11 +133,12 @@ public class PoemFetcherImpl implements PoemFetcher {
         .get(link)
         .compose(this::updatePoem)
         .recover(ex -> this.createPoem(link))
-        .onComplete(r -> {
-          if (r.result().getId() != null) {
-            log.info("Link fetching done: {}", link);
-          }
-        });
+        .onComplete(
+            r -> {
+              if (r.result().getId() != null) {
+                log.info("Link fetching done: {}", link);
+              }
+            });
   }
 
   private Future<PoemEntity> createPoem(String link) {
@@ -180,45 +176,16 @@ public class PoemFetcherImpl implements PoemFetcher {
   }
 
   private Future<Poem> getPoem(String link) {
-    return BaseCrawler.fetchPage(link).flatMap(page -> {
-      try {
-        var poem = this.extractPoem(page);
-        return Future.succeededFuture(poem);
-      } catch (PoemFetchingException ex) {
-        log.error("Failed to fetch poem in this link: {}", link);
-        return Future.failedFuture(ex);
-      }
-    });
-  }
-
-  private Poem extractPoem(@NonNull Document page) throws PoemFetchingException {
-    Elements poemTitlesEls = page.select(".poem-view-separated > h4");
-    Elements poemContentEls = page.select(".poem-view-separated > p");
-    String pageTitle = page.select(".page-header h1").html();
-    if (poemContentEls.size() == 0) {
-      Element poemContentEl = page.select(".poem-content > p").first();
-      if (poemContentEl == null) {
-        throw new PoemFetchingException();
-      }
-      var poemContent = poemContentEl.html().replace("<br>", "\n");
-      return Poem.builder()
-          .title(pageTitle)
-          .content(List.of(PoemContent.builder().title(pageTitle).content(poemContent).build()))
-          .build();
-    }
-    List<String> poemContents =
-        poemContentEls.stream()
-            .filter(el -> !el.text().isEmpty())
-            .map(el -> el.html().replace("<br>", "\n"))
-            .collect(Collectors.toList());
-    List<PoemContent> poems = new ArrayList<>();
-    var index = 0;
-    for (Element title : poemTitlesEls) {
-      var poemContent = poemContents.get(index);
-      var poem = PoemContent.builder().title(title.text()).content(poemContent).build();
-      poems.add(poem);
-      index++;
-    }
-    return Poem.builder().title(pageTitle).content(poems).build();
+    return BaseCrawler.fetchPage(link)
+        .flatMap(
+            page -> {
+              try {
+                var poem = PoemParserService.parse(page);
+                return Future.succeededFuture(poem);
+              } catch (PoemParsingException ex) {
+                log.error("Failed to fetch poem in this link: {}", link);
+                return Future.failedFuture(ex);
+              }
+            });
   }
 }

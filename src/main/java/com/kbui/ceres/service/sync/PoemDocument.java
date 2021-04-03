@@ -18,7 +18,9 @@ public class PoemDocument {
   String url;
   String name;
   List<PoemContent> content;
+
   @DBRef
   PoetDocument poet;
+
   @Version Long version;
 }

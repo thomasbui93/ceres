@@ -1,7 +1,7 @@
 package com.kbui.ceres.scheduler;
 
 import com.kbui.ceres.config.CrawlerPoemConfiguration;
-import com.kbui.ceres.service.crawler.PoemFetcher;
+import com.kbui.ceres.service.crawler.poem.PoemFetcher;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import java.text.SimpleDateFormat;

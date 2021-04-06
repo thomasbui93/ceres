@@ -4,3 +4,6 @@ crawler:
     authors:
       - Lý Bạch
       - Nguyễn Trãi
+  image:
+    ghibli:
+      baseUrl: https://www.ghibli.jp/info/013409/

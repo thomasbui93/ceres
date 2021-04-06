@@ -1,6 +1,6 @@
 package com.kbui.ceres.service.sync;
 
-import com.kbui.ceres.service.crawler.entity.PoemContent;
+import com.kbui.ceres.service.crawler.poem.entity.PoemContent;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;

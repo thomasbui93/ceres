@@ -1,7 +1,7 @@
 package com.kbui.ceres.repository;
 
-import com.kbui.ceres.service.crawler.entity.PoemContent;
 import com.kbui.ceres.repository.models.PoemEntity;
+import com.kbui.ceres.service.crawler.poem.entity.PoemContent;
 import io.vertx.core.Future;
 import java.util.List;
 import org.springframework.stereotype.Service;

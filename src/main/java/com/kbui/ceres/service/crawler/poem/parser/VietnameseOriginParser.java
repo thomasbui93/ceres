@@ -1,8 +1,8 @@
-package com.kbui.ceres.service.crawler.parser;
+package com.kbui.ceres.service.crawler.poem.parser;
 
 import com.kbui.ceres.exception.crawler.PoemParsingException;
-import com.kbui.ceres.service.crawler.entity.Poem;
-import com.kbui.ceres.service.crawler.entity.PoemContent;
+import com.kbui.ceres.service.crawler.poem.entity.Poem;
+import com.kbui.ceres.service.crawler.poem.entity.PoemContent;
 import java.util.List;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;

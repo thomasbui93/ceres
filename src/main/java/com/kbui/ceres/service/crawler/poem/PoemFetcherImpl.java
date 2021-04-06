@@ -1,8 +1,9 @@
-package com.kbui.ceres.service.crawler;
+package com.kbui.ceres.service.crawler.poem;
 
 import com.kbui.ceres.repository.PoetRepository;
 import com.kbui.ceres.repository.models.Poet;
-import com.kbui.ceres.service.crawler.parser.PoemParserService;
+import com.kbui.ceres.service.crawler.BaseCrawler;
+import com.kbui.ceres.service.crawler.poem.parser.PoemParserService;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
 import java.net.URLEncoder;

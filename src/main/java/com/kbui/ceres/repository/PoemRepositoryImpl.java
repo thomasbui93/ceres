@@ -1,6 +1,6 @@
 package com.kbui.ceres.repository;
 
-import com.kbui.ceres.service.crawler.PoemContent;
+import com.kbui.ceres.service.crawler.entity.PoemContent;
 import com.kbui.ceres.repository.models.PoemEntity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.kbui.ceres.scheduler.PoemCrawlerTask;

@@ -1,6 +1,6 @@
 package com.kbui.ceres.repository.models;
 
-import com.kbui.ceres.service.crawler.PoemContent;
+import com.kbui.ceres.service.crawler.entity.PoemContent;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

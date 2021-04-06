@@ -1,6 +1,6 @@
 package com.kbui.ceres.service.sync;
 
-import com.kbui.ceres.service.crawler.PoemContent;
+import com.kbui.ceres.service.crawler.entity.PoemContent;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;
@@ -18,7 +18,9 @@ public class PoemDocument {
   String url;
   String name;
   List<PoemContent> content;
+
   @DBRef
   PoetDocument poet;
+
   @Version Long version;
 }

@@ -1,6 +1,6 @@
 package com.kbui.ceres.scheduler;
 
-import com.kbui.ceres.service.sync.PoemSyncService;
+import com.kbui.ceres.service.sync.poem.PoemSyncService;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import org.slf4j.Logger;

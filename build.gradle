@@ -12,6 +12,7 @@ def vertxVersion = "4.0.3"
 def redisVersion = "2.8.1"
 def jsoupVersion = "1.13.1"
 def jsonYamlVersion = "2.11.1"
+def cloudinaryVersion = "1.29.0"
 
 repositories {
 	mavenCentral()
@@ -25,6 +26,7 @@ dependencies {
 	implementation "org.jsoup:jsoup:$jsoupVersion"
 	implementation "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:$jsonYamlVersion"
 	implementation "com.fasterxml.jackson.core:jackson-databind:$jsonYamlVersion"
+	implementation "com.cloudinary:cloudinary-http44:$cloudinaryVersion"
 
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 

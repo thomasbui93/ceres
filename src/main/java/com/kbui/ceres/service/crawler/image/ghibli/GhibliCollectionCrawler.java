@@ -4,17 +4,12 @@ import com.kbui.ceres.service.crawler.BaseCrawler;
 import io.vertx.core.Future;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
 
-@Component
 public class GhibliCollectionCrawler {
-  @Value("${crawler.image.ghibli.baseUrl}")
-  private String baseUrl;
 
-  private final String linkSelector = "a.panelarea";
+  static final String linkSelector = "a.panelarea";
 
-  public Future<List<String>> fetch() {
+  public static Future<List<String>> fetch(String baseUrl) {
     return BaseCrawler.fetchPage(baseUrl)
         .map(
             page ->

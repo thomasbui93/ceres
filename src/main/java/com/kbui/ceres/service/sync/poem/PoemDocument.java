@@ -1,4 +1,4 @@
-package com.kbui.ceres.service.sync;
+package com.kbui.ceres.service.sync.poem;
 
 import com.kbui.ceres.service.crawler.poem.entity.PoemContent;
 import java.util.List;

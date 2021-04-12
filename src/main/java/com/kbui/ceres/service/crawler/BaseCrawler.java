@@ -14,7 +14,7 @@ public class BaseCrawler {
     return crawler.getPage();
   }
 
-  public BaseCrawler(String baseUrl) {
+  protected BaseCrawler(String baseUrl) {
     this.baseUrl = baseUrl;
   }
 

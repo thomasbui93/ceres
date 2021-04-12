@@ -1,31 +1,33 @@
 package com.kbui.ceres.service.crawler.image.ghibli;
 
-import com.kbui.ceres.service.crawler.image.ImageCrawler;
+import com.kbui.ceres.service.crawler.image.ImageCrawlerAbstract;
+import com.kbui.ceres.service.crawler.image.ImageResult;
 import io.vertx.core.CompositeFuture;
 import io.vertx.core.Future;
+import java.util.ArrayList;
 import java.util.Arrays;
-import org.springframework.beans.factory.annotation.Autowired;
+import java.util.List;
 
-public class GhibliCrawler implements ImageCrawler {
+public class GhibliCrawler extends ImageCrawlerAbstract {
+  private final String baseUrl;
 
-  @Autowired
-  private GhibliCollectionCrawler collectionCrawler;
+  public GhibliCrawler(String baseUrl) {
+    this.baseUrl = baseUrl;
+  }
 
-  @Override
-  public Future<Boolean> fetchImages(String baseUrl) {
-    return collectionCrawler
-      .fetch()
+  protected Future<List<List<ImageResult>>> getImages() {
+    return GhibliCollectionCrawler
+      .fetch(this.baseUrl)
       .compose(movieLinks -> {
         var images = movieLinks
           .stream()
           .map(GhibliMovieCrawler::fetch);
 
-        var futures =
-          Arrays.asList(images.toArray(Future[]::new));
+        var futures = Arrays.asList(images.toArray(Future[]::new));
 
-        return  Future.future((future) -> CompositeFuture
+        return Future.future((future) -> CompositeFuture
           .all(futures)
-          .onComplete(r -> future.complete(r.succeeded()))
+          .map(r -> new ArrayList<>(r.list()))
         );
       });
   }

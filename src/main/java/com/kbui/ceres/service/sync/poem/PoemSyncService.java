@@ -1,4 +1,4 @@
-package com.kbui.ceres.service.sync;
+package com.kbui.ceres.service.sync.poem;
 
 import com.kbui.ceres.config.CrawlerPoemConfiguration;
 import com.kbui.ceres.repository.PoemRepository;

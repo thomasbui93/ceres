@@ -3,7 +3,7 @@ package com.kbui.ceres.repository.models;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.kbui.ceres.service.sync.PoetDocument;
+import com.kbui.ceres.service.sync.poem.PoetDocument;
 import java.util.List;
 import lombok.Builder;
 import lombok.Data;

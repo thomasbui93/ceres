@@ -1,4 +1,4 @@
-package com.kbui.ceres.service.sync;
+package com.kbui.ceres.service.sync.poem;
 
 import lombok.Builder;
 import lombok.Data;
